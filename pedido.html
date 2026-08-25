@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Açaí da Bah — Acompanhar pedido</title>
+<style>
+:root{--p:#4b1252;--g:#a8c900;--bg:#f7f3f8;--text:#321536;--muted:#766b79}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#4b1252 0 220px,var(--bg) 220px);font-family:Inter,system-ui,sans-serif;color:var(--text);min-height:100vh}
+.wrap{width:min(520px,100%);margin:auto;padding:28px 16px}.head{color:#fff;text-align:center;padding:15px}.head h1{margin:8px 0 3px;font-size:27px}.head p{margin:0;opacity:.85}
+.card{background:#fff;border-radius:22px;padding:22px;margin-top:20px;box-shadow:0 15px 40px #0002}.order{text-align:center}.order small{color:var(--muted)}.order h2{margin:5px 0 0;color:var(--p)}
+.steps{margin-top:25px}.step{display:flex;gap:13px;position:relative;padding:0 0 25px}.dot{width:42px;height:42px;border-radius:50%;background:#eee;display:grid;place-items:center;font-size:20px;flex:none;z-index:1}.step.active .dot{background:#eaf2b8}.step.current .dot{background:var(--g);box-shadow:0 0 0 5px #a8c90022}.step h3{margin:2px 0 3px;font-size:15px}.step p{margin:0;color:var(--muted);font-size:12px}.line{position:absolute;left:20px;top:42px;width:2px;height:35px;background:#ddd}.step.done .line{background:var(--g)}.step.done .dot{background:#eaf2b8}.info{margin-top:8px;padding:12px;border-radius:12px;background:#faf8fb;font-size:13px}.error{text-align:center;color:#b42318;padding:20px}.refresh{font-size:11px;color:var(--muted);text-align:center;margin-top:10px}.back{display:block;text-align:center;margin-top:14px;color:var(--p);font-weight:800;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head"><div style="font-size:38px">🍃</div><h1>Açaí da Bah</h1><p>Acompanhe seu pedido</p></div>
+  <div class="card" id="app"><div class="error">Carregando pedido...</div></div>
+</div>
+<script>
+const URL="https://tqfyhdmaternpfxaxbca.supabase.co";
+const KEY="sb_publishable_cSlJVWCqjUHlzYCN5pgezQ_rxKYyeEB";
+const token=new URLSearchParams(location.search).get("token");
+const labels={
+ novo:["","Pedido recebido","Seu pedido foi recebido pela Açaí da Bah."],
+ preparando:["","Em preparo","Estamos preparando seu açaí."],
+ pronto:["","Pedido pronto","Seu pedido está pronto!"],
+ saiu:["","Saiu para entrega","Seu pedido está a caminho."]
+};
+function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+async function getOrder(){
+ if(!token){throw new Error("Link de acompanhamento inválido.")}
+ const r=await fetch(URL+"/rest/v1/rpc/get_pedido_tracking",{
+   method:"POST",
+   headers:{"apikey":KEY,"Content-Type":"application/json"},
+   body:JSON.stringify({p_token:token})
+ });
+ const text=await r.text(); let data=null; try{data=text?JSON.parse(text):null}catch{}
+ if(!r.ok) throw new Error(data?.message||data?.hint||"Pedido não encontrado.");
+ return data?.[0]||null;
+}
+function render(o){
+ if(!o){document.getElementById("app").innerHTML='<div class="error">Pedido não encontrado ou link expirado.</div>';return}
+ const statuses=["novo","preparando","pronto","saiu"];
+ const idx=statuses.indexOf(o.status);
+ const steps=statuses.map((s,i)=>{
+   const l=labels[s], cls=i<idx?"done":i===idx?"current":"";
+   return `<div class="step ${cls}"><div class="dot">${i+1}</div><div><h3>${l[1]}</h3><p>${l[2]}</p></div>${i<3?`<div class="line"></div>`:""}</div>`;
+ }).join("");
+ const end=o.tipo_entrega==="retirada"?(o.status==="pronto"?"Seu pedido está disponível para retirada.":"Você escolheu retirar na loja."):(o.status==="saiu"?"Seu pedido saiu para entrega.":"Entrega para "+(o.bairro||"seu endereço")+".");
+ document.getElementById("app").innerHTML=`<div class="order"><small>Pedido</small><h2>#${o.numero}</h2></div><div class="steps">${steps}</div><div class="info">${end}</div><div class="refresh">Atualizando automaticamente...</div><a class="back" href="index.html">← Voltar ao cardápio</a>`;
+}
+async function load(){
+ try{render(await getOrder())}catch(e){document.getElementById("app").innerHTML=`<div class="error">${e.message}</div><a class="back" href="index.html">← Voltar ao cardápio</a>`}
+}
+load();setInterval(load,5000);
+</script>
+</body>
+</html>

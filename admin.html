@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Açaí da Bah — Painel de Pedidos</title>
+<style>
+:root{--p:#4b1252;--g:#a8c900;--bg:#f7f5f7;--text:#321536;--muted:#766b79}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,system-ui,sans-serif;color:var(--text)}
+header{background:var(--p);color:#fff;padding:18px 20px}.wrap{max-width:1200px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center}.brand{display:flex;gap:10px;align-items:center}.logo{width:42px;height:42px;border-radius:13px;border:1px solid #fff6;display:grid;place-items:center}.brand h1{margin:0;font-size:21px}.brand small{opacity:.8}.status{background:#ffffff18;border:1px solid #fff3;border-radius:12px;padding:9px 12px;font-size:13px}
+main{padding:22px 16px}.title{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.title h2{margin:0}.refresh{border:0;background:#fff;border:1px solid #ddd;padding:10px 14px;border-radius:10px;font-weight:700}
+.columns{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.col{background:#ece9ed;border-radius:18px;padding:12px;min-height:300px}.col h3{font-size:15px;margin:4px 4px 12px}.count{background:#ddd7df;border-radius:99px;padding:3px 7px;font-size:11px;float:right}
+.card{background:#fff;border-radius:15px;padding:14px;margin-bottom:12px;box-shadow:0 5px 18px #0000000d}.card-head{display:flex;justify-content:space-between;gap:8px}.num{font-weight:900;color:var(--p)}.time{font-size:11px;color:var(--muted)}.customer{margin:10px 0 4px;font-weight:800}.items{font-size:13px;border-top:1px solid #eee;padding-top:8px}.item{padding:5px 0}.item small{display:block;color:var(--muted)}.info{font-size:12px;color:#554b59;margin-top:8px}.total{font-size:17px;font-weight:900;color:var(--p);margin-top:10px}.payment{font-size:12px;margin-top:5px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.actions button{border:0;border-radius:9px;padding:9px;font-weight:800;cursor:pointer}.next{background:var(--p);color:#fff}.back{background:#eee}.empty{color:#999;text-align:center;padding:30px 8px;font-size:13px}
+@media(max-width:900px){.columns{grid-template-columns:1fr 1fr}}@media(max-width:600px){.columns{grid-template-columns:1fr}.status{display:none}}
+</style>
+<style>
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#4b1252,#65156d);display:flex;align-items:center;justify-content:center;padding:20px;z-index:99}
+.login-box{width:min(390px,100%);background:#fff;border-radius:22px;padding:28px;box-shadow:0 20px 60px #0005}.login-box h2{margin:0;color:#4b1252}.login-box p{color:#766b79;font-size:13px}.login-box input{width:100%;padding:13px;margin:7px 0;border:1px solid #ddd;border-radius:11px;font:inherit}.login-box button{width:100%;padding:13px;margin-top:8px;border:0;border-radius:11px;background:#4b1252;color:#fff;font-weight:800;font-size:15px;cursor:pointer}.login-error{color:#b42318;font-size:13px;min-height:18px;margin-top:8px}.logout{border:1px solid #fff5;background:#fff1;color:#fff;border-radius:10px;padding:8px 11px;cursor:pointer}
+body.locked>header,body.locked>main{display:none}
+</style></head>
+<body class="locked"><div id="loginScreen">
+  <div class="login-box">
+    <div style="font-size:34px">🍃</div>
+    <h2>Painel Açaí da Bah</h2>
+    <p>Entre com a conta da loja para acessar os pedidos.</p>
+    <input id="loginEmail" type="email" placeholder="E-mail">
+    <input id="loginPassword" type="password" placeholder="Senha">
+    <button onclick="login()">Entrar</button>
+    <div id="loginError" class="login-error"></div><div style="font-size:11px;color:#999;margin-top:8px">Use o e-mail e a senha cadastrados no Supabase.</div>
+  </div>
+</div>
+<header><div class="wrap top">
+<div class="brand"><div class="logo">🍃</div><div><h1>Açaí da Bah</h1><small>Painel de pedidos</small></div></div>
+<div style="display:flex;gap:8px;align-items:center"><div class="status">● Loja aberta</div><button class="logout" onclick="logout()">Sair</button></div>
+</div></header>
+<main class="wrap">
+<div class="title"><div><h2>Pedidos</h2><small style="color:var(--muted)">Acompanhe cada pedido até a entrega.</small></div><button class="refresh" onclick="render()">↻ Atualizar</button></div>
+<div class="columns">
+<section class="col"><h3>🟡 Novos <span class="count" id="c0">0</span></h3><div id="s0"></div></section>
+<section class="col"><h3>🔵 Em preparo <span class="count" id="c1">0</span></h3><div id="s1"></div></section>
+<section class="col"><h3>🟢 Prontos <span class="count" id="c2">0</span></h3><div id="s2"></div></section>
+<section class="col"><h3>🚴 Saiu para entrega <span class="count" id="c3">0</span></h3><div id="s3"></div></section>
+</div></main>
+
+<script>
+const SUPABASE_URL="https://tqfyhdmaternpfxaxbca.supabase.co";
+const SUPABASE_KEY="sb_publishable_cSlJVWCqjUHlzYCN5pgezQ_rxKYyeEB";
+let accessToken=localStorage.getItem("acai_access_token")||"";
+let orders=[];
+const keys=["novo","preparando","pronto","saiu"];
+
+function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
+function setError(msg){const e=document.getElementById("loginError"); if(e)e.textContent=msg||""}
+
+async function api(path,options={}){
+ const headers=Object.assign({"apikey":SUPABASE_KEY,"Content-Type":"application/json"},options.headers||{});
+ if(accessToken) headers.Authorization="Bearer "+accessToken;
+ const r=await fetch(SUPABASE_URL+path,{...options,headers});
+ const text=await r.text();
+ let data=null; try{data=text?JSON.parse(text):null}catch{}
+ if(!r.ok) throw new Error(data?.msg||data?.message||data?.error_description||text||("HTTP "+r.status));
+ return data;
+}
+
+async function login(){
+ const email=document.getElementById("loginEmail").value.trim();
+ const password=document.getElementById("loginPassword").value;
+ const btn=document.querySelector("#loginScreen button");
+ setError("");
+ if(!email||!password){setError("Informe e-mail e senha.");return}
+ btn.disabled=true; btn.textContent="Entrando...";
+ try{
+   const data=await api("/auth/v1/token?grant_type=password",{method:"POST",body:JSON.stringify({email,password})});
+   accessToken=data.access_token;
+   localStorage.setItem("acai_access_token",accessToken);
+   document.body.classList.remove("locked");
+   document.getElementById("loginScreen").style.display="none";
+   await loadOrders();
+   subscribePolling();
+ }catch(e){
+   console.error(e);
+   setError(e.message||"Não foi possível entrar.");
+ }finally{btn.disabled=false;btn.textContent="Entrar"}
+}
+
+function logout(){
+ accessToken="";
+ localStorage.removeItem("acai_access_token");
+ document.body.classList.add("locked");
+ document.getElementById("loginScreen").style.display="flex";
+}
+
+async function loadOrders(){
+ try{
+   const data=await api("/rest/v1/pedidos?select=*&order=criado_em.desc");
+   orders=data||[]; render();
+ }catch(e){
+   if(/JWT|token|auth|401|403/i.test(e.message)){logout();setError("Sua sessão expirou. Entre novamente.");}
+   else console.error(e);
+ }
+}
+function nextStatus(status){const i=keys.indexOf(status);return keys[Math.min(i+1,keys.length-1)]}
+function prevStatus(status){const i=keys.indexOf(status);return keys[Math.max(i-1,0)]}
+async function changeStatus(id,status){
+ try{
+   await api("/rest/v1/pedidos?id=eq."+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({status})});
+   await loadOrders();
+ }catch(e){alert("Não foi possível atualizar o pedido: "+e.message)}
+}
+function card(o,i){
+ const items=(o.itens||[]).map(x=>`<div class="item"><strong>${x.quantidade||1}x ${x.nome}</strong><small>${(x.acompanhamentos||[]).map(e=>e.nome+(Number(e.preco)?` (+ ${money(e.preco)})`:"")).join(", ")}</small></div>`).join("");
+ const pay=o.pagamento==="Dinheiro"?`💵 Dinheiro · troco para ${money(o.troco_para)} → levar ${money(Number(o.troco_para||0)-Number(o.total||0))}`:`💳 ${o.pagamento}`;
+ const when=o.criado_em?new Date(o.criado_em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"";
+ const delivery=o.tipo_entrega==="retirada"?"🏪 Retirada na loja":`🛵 ${o.bairro||"Entrega"}`;
+ return `<article class="card"><div class="card-head"><span class="num">#${o.numero}</span><span class="time">${when}</span></div>
+ <div class="customer">${o.cliente_nome}</div><div class="items">${items}</div>
+ <div class="info">${delivery}${o.endereco?" · "+o.endereco:""}${o.referencia?" · Ref.: "+o.referencia:""}</div>
+ <div class="payment">${pay}</div>${o.observacao?`<div class="info">📝 ${o.observacao}</div>`:""}
+ <div class="total">${money(o.total)}</div>
+ <div class="actions">${i>0?`<button class="back" onclick="changeStatus(${o.id},'${prevStatus(o.status)}')">← Voltar</button>`:"<span></span>"}
+ <button class="next" onclick="changeStatus(${o.id},'${nextStatus(o.status)}')">${i===3?"Finalizado":"Avançar →"}</button></div></article>`;
+}
+function render(){
+ keys.forEach((k,i)=>{
+  const list=orders.filter(o=>o.status===k);
+  document.getElementById("c"+i).textContent=list.length;
+  document.getElementById("s"+i).innerHTML=list.length?list.map(o=>card(o,i)).join(""):'<div class="empty">Nenhum pedido aqui.</div>';
+ });
+}
+let poll=null;
+function subscribePolling(){if(poll)return;poll=setInterval(loadOrders,5000)}
+async function init(){
+ if(accessToken){
+  document.body.classList.remove("locked");
+  document.getElementById("loginScreen").style.display="none";
+  await loadOrders(); subscribePolling();
+ }else{
+  document.body.classList.add("locked");
+  document.getElementById("loginScreen").style.display="flex";
+ }
+}
+init();
+</script></body></html>
