@@ -132,7 +132,7 @@ function showCustomize(p){
  document.getElementById('cartLines').innerHTML=`
  <div class="customize">
    <h2>${p.name}</h2>
-   <p style="color:var(--muted)">Escolha até <strong>3 acompanhamentos grátis</strong>. Adicionais pagos podem ser acrescentados além deles.</p>
+   <p style="color:var(--muted)">Escolha até <strong>3 acompanhamentos</strong> por açaí. Grátis ou pagos, o limite total é 3.</p>
    <div id="extrasList">${paid.map(x=>`<label style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #eee">
      <span><input type="checkbox" class="extra-check" data-id="${x.id}" data-name="${x.name}" data-price="${x.price}" onchange="limitFree(this)"> ${x.name}</span>
      <strong>${x.price?`+ ${money(x.price)}`:'Grátis'}</strong>
