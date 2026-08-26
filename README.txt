@@ -17,4 +17,3 @@ Próxima etapa para produção:
 4. integrar uma impressora térmica (idealmente via computador/servidor local);
 5. configurar taxa de entrega e meios de pagamento reais;
 6. publicar o site em um domínio.
-Atualização do site

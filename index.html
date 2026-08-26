@@ -126,7 +126,7 @@ function showCustomize(p){
   {id:105,name:"Creme de Ninho",price:0},{id:106,name:"Ovomaltine",price:0},
   {id:107,name:"Paçoca",price:0},{id:108,name:"Granola",price:0},{id:109,name:"Banana",price:0},
   {id:110,name:"Morango",price:4},{id:111,name:"Uva",price:4},
-  {id:112,name:"Creme de morango",price:4},{id:113,name:"Nutella",price:6},{id:114,name:"Creme de Chocolate Branco",price:4}
+  {id:112,name:"Creme de morango",price:4},{id:113,name:"Nutella",price:(p.name.includes("330")?6:p.name.includes("500")?8:10)},{id:114,name:"Creme de Chocolate Branco",price:4}
  ];
  document.getElementById('modal').classList.add('open');
  document.getElementById('cartLines').innerHTML=`
