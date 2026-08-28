@@ -132,7 +132,7 @@ function showCustomize(p){
  document.getElementById('cartLines').innerHTML=`
  <div class="customize">
    <h2>${p.name}</h2>
-   <p style="color:var(--muted)">Escolha até <strong>3 acompanhamentos</strong> por açaí. Grátis ou pagos, o limite total é 3.</p>
+   <p style="color:var(--muted)">Escolha até <strong>3 acompanhamentos grátis</strong> por açaí. Você pode adicionar acompanhamentos pagos além dos 3 grátis.</p>
    <div id="extrasList">${paid.map(x=>`<label style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #eee">
      <span><input type="checkbox" class="extra-check" data-id="${x.id}" data-name="${x.name}" data-price="${x.price}" onchange="limitFree(this)"> ${x.name}</span>
      <strong>${x.price?`+ ${money(x.price)}`:'Grátis'}</strong>
@@ -143,14 +143,20 @@ function showCustomize(p){
  document.getElementById('checkoutArea').innerHTML='';
 }
 function limitFree(el){
- const checks=[...document.querySelectorAll('.extra-check')].filter(x=>Number(x.dataset.price)===0&&x.checked);
- if(checks.length>3){el.checked=false;alert('Você pode escolher até 3 acompanhamentos grátis.');}
- const count=[...document.querySelectorAll('.extra-check')].filter(x=>Number(x.dataset.price)===0&&x.checked).length;
- document.getElementById('freeCount').textContent=`${count}/3 acompanhamentos grátis selecionados`;
+ const freeChecks=[...document.querySelectorAll('.extra-check')].filter(x=>Number(x.dataset.price)===0&&x.checked);
+ if(freeChecks.length>3){
+   el.checked=false;
+   alert('Você pode escolher até 3 acompanhamentos grátis. Os acompanhamentos pagos podem ser adicionados além dos 3 grátis.');
+ }
+ const freeCount=[...document.querySelectorAll('.extra-check')].filter(x=>Number(x.dataset.price)===0&&x.checked).length;
+ const paidCount=[...document.querySelectorAll('.extra-check')].filter(x=>Number(x.dataset.price)>0&&x.checked).length;
+ document.getElementById('freeCount').textContent=`${freeCount}/3 acompanhamentos grátis selecionados${paidCount ? ` · ${paidCount} pago${paidCount>1?'s':''} adicionado${paidCount>1?'s':''}` : ''}`;
 }
 function confirmCustomize(pid){
  const p=products.find(x=>x.id===pid);
  const selected=[...document.querySelectorAll('.extra-check:checked')].map(x=>({id:Number(x.dataset.id),name:x.dataset.name,price:Number(x.dataset.price)}));
+ const freeCount=selected.filter(x=>x.price===0).length;
+ if(freeCount>3){alert('Você pode escolher até 3 acompanhamentos grátis.');return;}
  const extraTotal=selected.reduce((s,x)=>s+x.price,0);
  cart.push({...p,qty:1,extras:selected,unitTotal:p.price+extraTotal});
  updateBar();renderCart();
@@ -228,7 +234,7 @@ function renderCart(){
 <div class="field">
   <label>Pagamento na entrega</label>
   <div class="payment-options">
-    <label class="payment-option"><input type="radio" name="pay" value="Pix" checked onchange="toggleChange()"> <span>Pix</span></label>
+    <label class="payment-option"><input type="radio" name="pay" value="Pix / QR Code / Maquininha" checked onchange="toggleChange()"> <span>Pix · QR Code · Maquininha</span></label>
     <label class="payment-option"><input type="radio" name="pay" value="Crédito" onchange="toggleChange()"> <span>Cartão de crédito</span></label>
     <label class="payment-option"><input type="radio" name="pay" value="Débito" onchange="toggleChange()"> <span>Cartão de débito</span></label>
     <label class="payment-option"><input type="radio" name="pay" value="Dinheiro" onchange="toggleChange()"> <span>Dinheiro</span></label>
@@ -294,7 +300,7 @@ async function finishOrder(){
    deliveryFee=updateDeliveryFee();
    if(!neighborhood || !address){alert('Informe o bairro e o endereço para entrega.');return}
  }
- const pay=document.querySelector('input[name="pay"]:checked')?.value || 'Pix';
+ const pay=document.querySelector('input[name="pay"]:checked')?.value || 'Pix / QR Code / Maquininha';
  const changeFor=pay==='Dinheiro' ? Number(document.getElementById('changeFor').value||0) : null;
  const productsTotal=getProductsTotal();
  const total=productsTotal+deliveryFee;
