@@ -48,3 +48,12 @@ for select to anon, authenticated using (true);
 drop policy if exists "autenticado pode alterar disponibilidade" on public.acompanhamentos_disponibilidade;
 create policy "autenticado pode alterar disponibilidade" on public.acompanhamentos_disponibilidade
 for update to authenticated using (true) with check (true);
+
+
+-- Permissões para a API do Supabase
+grant usage on schema public to anon, authenticated;
+grant select on public.acompanhamentos_disponibilidade to anon, authenticated;
+grant update on public.acompanhamentos_disponibilidade to authenticated;
+
+-- Atualiza o cache do PostgREST para reconhecer a tabela nova
+notify pgrst, 'reload schema';

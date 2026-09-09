@@ -1,3 +1,2 @@
-Mantida a versão sem emojis nos cards e com a arte da fachada.
-Cards: 330 ml, 500 ml e 770 ml usando a mesma foto real do açaí.
-Pago: Morango R$4, Uva R$4, Creme de morango R$4, Nutella R$6, Creme de Chocolate Branco R$4 (provisório).
+Atualização: som de novo pedido, controle de disponibilidade dos acompanhamentos, Creme de cookies R$4, Creme de avelã grátis e Uva removida.
+Correção adicional: permissões da tabela de disponibilidade e recarga do cache do PostgREST.

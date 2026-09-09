@@ -115,7 +115,7 @@ async function loadAvailabilityAdmin(){
   const map={}; (data||[]).forEach(x=>map[x.nome]=x.disponivel!==false);
   const el=document.getElementById('availabilityList');
   el.innerHTML=accompanimentNames.map(name=>`<label class="avail-item"><span>${name}</span><input class="switch" type="checkbox" ${map[name]!==false?'checked':''} onchange="setAvailability('${name.replace(/'/g,"\\'")}',this.checked)"></label>`).join('');
- }catch(e){document.getElementById('availabilityList').textContent='Não foi possível carregar a disponibilidade.';console.error(e)}
+ }catch(e){document.getElementById('availabilityList').textContent='Não foi possível carregar a disponibilidade: '+(e.message||e);console.error(e)}
 }
 async function setAvailability(name,available){
  try{ await api('/rest/v1/acompanhamentos_disponibilidade?nome=eq.'+encodeURIComponent(name),{method:'PATCH',body:JSON.stringify({disponivel:available})}); }catch(e){alert('Não foi possível atualizar a disponibilidade: '+e.message);await loadAvailabilityAdmin();}
