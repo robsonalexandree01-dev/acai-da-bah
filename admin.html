@@ -16,6 +16,8 @@ main{padding:22px 16px}.title{display:flex;justify-content:space-between;align-i
 #loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#4b1252,#65156d);display:flex;align-items:center;justify-content:center;padding:20px;z-index:99}
 .login-box{width:min(390px,100%);background:#fff;border-radius:22px;padding:28px;box-shadow:0 20px 60px #0005}.login-box h2{margin:0;color:#4b1252}.login-box p{color:#766b79;font-size:13px}.login-box input{width:100%;padding:13px;margin:7px 0;border:1px solid #ddd;border-radius:11px;font:inherit}.login-box button{width:100%;padding:13px;margin-top:8px;border:0;border-radius:11px;background:#4b1252;color:#fff;font-weight:800;font-size:15px;cursor:pointer}.login-error{color:#b42318;font-size:13px;min-height:18px;margin-top:8px}.logout{border:1px solid #fff5;background:#fff1;color:#fff;border-radius:10px;padding:8px 11px;cursor:pointer}
 body.locked>header,body.locked>main{display:none}
+
+.availability{background:#fff;border-radius:18px;padding:16px;margin-bottom:18px;box-shadow:0 5px 18px #0000000d}.availability h3{margin:0 0 4px}.availability p{margin:0 0 12px;color:var(--muted);font-size:13px}.avail-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.avail-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border:1px solid #e7e2e8;border-radius:11px;font-size:13px}.switch{appearance:none;width:42px;height:24px;border-radius:999px;background:#d7d2d8;position:relative;cursor:pointer;flex:none}.switch:before{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;left:3px;top:3px;transition:.2s;box-shadow:0 1px 4px #0002}.switch:checked{background:var(--g)}.switch:checked:before{transform:translateX(18px)}.sound-btn{border:1px solid #fff5;background:#fff1;color:#fff;border-radius:10px;padding:8px 11px;cursor:pointer}.sound-btn.off{opacity:.6}@media(max-width:900px){.avail-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.avail-grid{grid-template-columns:1fr}}
 </style></head>
 <body class="locked"><div id="loginScreen">
   <div class="login-box">
@@ -30,10 +32,11 @@ body.locked>header,body.locked>main{display:none}
 </div>
 <header><div class="wrap top">
 <div class="brand"><div class="logo">🍃</div><div><h1>Açaí da Bah</h1><small>Painel de pedidos</small></div></div>
-<div style="display:flex;gap:8px;align-items:center"><div class="status">● Loja aberta</div><button class="logout" onclick="logout()">Sair</button></div>
+<div style="display:flex;gap:8px;align-items:center"><div class="status">● Loja aberta</div><button id="soundBtn" class="sound-btn" onclick="toggleSound()">🔊 Som ligado</button><button class="logout" onclick="logout()">Sair</button></div>
 </div></header>
 <main class="wrap">
 <div class="title"><div><h2>Pedidos</h2><small style="color:var(--muted)">Acompanhe cada pedido até a entrega.</small></div><button class="refresh" onclick="render()">↻ Atualizar</button></div>
+<section class="availability"><h3>Disponibilidade dos acompanhamentos</h3><p>Desligue um item quando acabar. Ele ficará apagado e não poderá ser escolhido no site.</p><div id="availabilityList" class="avail-grid">Carregando...</div></section>
 <div class="columns">
 <section class="col"><h3>🟡 Novos <span class="count" id="c0">0</span></h3><div id="s0"></div></section>
 <section class="col"><h3>🔵 Em preparo <span class="count" id="c1">0</span></h3><div id="s1"></div></section>
@@ -46,7 +49,12 @@ const SUPABASE_URL="https://tqfyhdmaternpfxaxbca.supabase.co";
 const SUPABASE_KEY="sb_publishable_cSlJVWCqjUHlzYCN5pgezQ_rxKYyeEB";
 let accessToken=localStorage.getItem("acai_access_token")||"";
 let orders=[];
+let initialized=false;
+let lastOrderSignature="";
+let soundEnabled=true;
+let audioCtx=null;
 const keys=["novo","preparando","pronto","saiu"];
+const accompanimentNames=["Leite em pó","Leite condensado","Disquete","Chocoball","Creme de Ninho","Ovomaltine","Paçoca","Granola","Banana","Creme de avelã","Morango","Creme de morango","Creme de cookies","Nutella","Creme de Chocolate Branco"];
 
 function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
 function setError(msg){const e=document.getElementById("loginError"); if(e)e.textContent=msg||""}
@@ -72,6 +80,7 @@ async function login(){
    const data=await api("/auth/v1/token?grant_type=password",{method:"POST",body:JSON.stringify({email,password})});
    accessToken=data.access_token;
    localStorage.setItem("acai_access_token",accessToken);
+   ensureAudio();
    document.body.classList.remove("locked");
    document.getElementById("loginScreen").style.display="none";
    await loadOrders();
@@ -89,10 +98,35 @@ function logout(){
  document.getElementById("loginScreen").style.display="flex";
 }
 
+function ensureAudio(){
+ try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); return true;}catch(e){return false;}
+}
+function playNewOrderSound(){
+ if(!soundEnabled || !ensureAudio()) return;
+ const now=audioCtx.currentTime;
+ [0,0.16,0.32].forEach((t,i)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=i===1?880:660;g.gain.setValueAtTime(0.0001,now+t);g.gain.exponentialRampToValueAtTime(0.22,now+t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,now+t+0.13);o.connect(g);g.connect(audioCtx.destination);o.start(now+t);o.stop(now+t+0.14);});
+}
+function toggleSound(){
+ soundEnabled=!soundEnabled; const b=document.getElementById('soundBtn'); if(b){b.textContent=soundEnabled?'🔊 Som ligado':'🔇 Som desligado';b.classList.toggle('off',!soundEnabled);} if(soundEnabled){ensureAudio();playNewOrderSound();}
+}
+async function loadAvailabilityAdmin(){
+ try{
+  const data=await api('/rest/v1/acompanhamentos_disponibilidade?select=nome,disponivel&order=id.asc');
+  const map={}; (data||[]).forEach(x=>map[x.nome]=x.disponivel!==false);
+  const el=document.getElementById('availabilityList');
+  el.innerHTML=accompanimentNames.map(name=>`<label class="avail-item"><span>${name}</span><input class="switch" type="checkbox" ${map[name]!==false?'checked':''} onchange="setAvailability('${name.replace(/'/g,"\\'")}',this.checked)"></label>`).join('');
+ }catch(e){document.getElementById('availabilityList').textContent='Não foi possível carregar a disponibilidade.';console.error(e)}
+}
+async function setAvailability(name,available){
+ try{ await api('/rest/v1/acompanhamentos_disponibilidade?nome=eq.'+encodeURIComponent(name),{method:'PATCH',body:JSON.stringify({disponivel:available})}); }catch(e){alert('Não foi possível atualizar a disponibilidade: '+e.message);await loadAvailabilityAdmin();}
+}
 async function loadOrders(){
  try{
    const data=await api("/rest/v1/pedidos?select=*&order=criado_em.desc");
-   orders=data||[]; render();
+   const nextOrders=data||[];
+   const sig=nextOrders.length?String(nextOrders[0].id||nextOrders[0].numero||nextOrders[0].criado_em):"";
+   if(initialized && sig && sig!==lastOrderSignature) playNewOrderSound();
+   lastOrderSignature=sig; orders=nextOrders; render(); loadAvailabilityAdmin(); initialized=true;
  }catch(e){
    if(/JWT|token|auth|401|403/i.test(e.message)){logout();setError("Sua sessão expirou. Entre novamente.");}
    else console.error(e);
@@ -112,7 +146,7 @@ function card(o,i){
  const when=o.criado_em?new Date(o.criado_em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"";
  const delivery=o.tipo_entrega==="retirada"?"🏪 Retirada na loja":`🛵 ${o.bairro||"Entrega"}`;
  return `<article class="card"><div class="card-head"><span class="num">#${o.numero}</span><span class="time">${when}</span></div>
- <div class="customer">${o.cliente_nome}</div><div class="items">${items}</div>
+ <div class="customer">${o.cliente_nome}</div><div class="info">📱 ${o.whatsapp||"Telefone não informado"}</div><div class="items">${items}</div>
  <div class="info">${delivery}${o.endereco?" · "+o.endereco:""}${o.referencia?" · Ref.: "+o.referencia:""}</div>
  <div class="payment">${pay}</div>${o.observacao?`<div class="info">📝 ${o.observacao}</div>`:""}
  <div class="total">${money(o.total)}</div>
@@ -132,7 +166,7 @@ async function init(){
  if(accessToken){
   document.body.classList.remove("locked");
   document.getElementById("loginScreen").style.display="none";
-  await loadOrders(); subscribePolling();
+  await loadOrders(); loadAvailabilityAdmin(); subscribePolling();
  }else{
   document.body.classList.add("locked");
   document.getElementById("loginScreen").style.display="flex";

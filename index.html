@@ -80,11 +80,16 @@ const products=[
  {id:3,name:"Açaí 770 ml",price:26,emoji:"",desc:"Para quem quer um açaí bem servido."},
 ];
 const extras=[
- {id:101,name:"Leite Ninho",price:2},{id:102,name:"Morango",price:2},
- {id:103,name:"Granola",price:2},{id:104,name:"Nutella",price:4},
- {id:105,name:"Paçoca",price:2},{id:106,name:"Banana",price:2}
+ {id:101,name:"Leite em pó",price:0},{id:102,name:"Leite condensado",price:0},
+ {id:103,name:"Disquete",price:0},{id:104,name:"Chocoball",price:0},
+ {id:105,name:"Creme de Ninho",price:0},{id:106,name:"Ovomaltine",price:0},
+ {id:107,name:"Paçoca",price:0},{id:108,name:"Granola",price:0},{id:109,name:"Banana",price:0},
+ {id:115,name:"Creme de avelã",price:0},
+ {id:112,name:"Creme de morango",price:4},{id:116,name:"Creme de cookies",price:4},
+ {id:110,name:"Morango",price:4},{id:113,name:"Nutella",price:0},{id:114,name:"Creme de Chocolate Branco",price:4}
 ];
 let cart=[];
+let availability={};
 
 const money=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 function saveLastOrder(order){
@@ -118,25 +123,39 @@ function add(id){
  showCustomize(p);
 }
 
-function showCustomize(p){
- const free=extras.filter(x=>x.price===0);
- const paid=[
+async function loadAvailability(){
+ try{
+  const {data,error}=await supabaseClient.from('acompanhamentos_disponibilidade').select('nome,disponivel');
+  if(error) throw error;
+  availability={}; (data||[]).forEach(x=>availability[x.nome]=x.disponivel!==false);
+ }catch(e){ console.warn('Disponibilidade indisponível, usando todos como disponíveis.',e); availability={}; }
+}
+function isAvailable(name){ return availability[name]!==false; }
+async function showCustomize(p){
+ await loadAvailability();
+ const all=[
   {id:101,name:"Leite em pó",price:0},{id:102,name:"Leite condensado",price:0},
   {id:103,name:"Disquete",price:0},{id:104,name:"Chocoball",price:0},
   {id:105,name:"Creme de Ninho",price:0},{id:106,name:"Ovomaltine",price:0},
   {id:107,name:"Paçoca",price:0},{id:108,name:"Granola",price:0},{id:109,name:"Banana",price:0},
-  {id:110,name:"Morango",price:4},{id:111,name:"Uva",price:4},
-  {id:112,name:"Creme de morango",price:4},{id:113,name:"Nutella",price:(p.name.includes("330")?6:p.name.includes("500")?8:10)},{id:114,name:"Creme de Chocolate Branco",price:4}
+  {id:115,name:"Creme de avelã",price:0},
+  {id:110,name:"Morango",price:4},{id:111,name:"Uva",price:4},{id:112,name:"Creme de morango",price:4},
+  {id:116,name:"Creme de cookies",price:4},
+  {id:113,name:"Nutella",price:(p.name.includes("330")?6:p.name.includes("500")?8:10)},
+  {id:114,name:"Creme de Chocolate Branco",price:4}
  ];
+ const paid=all.filter(x=>x.name!=="Uva");
  document.getElementById('modal').classList.add('open');
  document.getElementById('cartLines').innerHTML=`
  <div class="customize">
    <h2>${p.name}</h2>
    <p style="color:var(--muted)">Escolha até <strong>3 acompanhamentos grátis</strong> por açaí. Você pode adicionar acompanhamentos pagos além dos 3 grátis.</p>
-   <div id="extrasList">${paid.map(x=>`<label style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #eee">
-     <span><input type="checkbox" class="extra-check" data-id="${x.id}" data-name="${x.name}" data-price="${x.price}" onchange="limitFree(this)"> ${x.name}</span>
-     <strong>${x.price?`+ ${money(x.price)}`:'Grátis'}</strong>
-   </label>`).join('')}</div>
+   <div id="extrasList">${paid.map(x=>{
+     const disabled=!isAvailable(x.name);
+     return `<label class="extra-option" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #eee;${disabled?'opacity:.42;':''}">
+       <span><input type="checkbox" class="extra-check" data-id="${x.id}" data-name="${x.name}" data-price="${x.price}" ${disabled?'disabled':''} onchange="limitFree(this)"> ${x.name}${disabled?' <small style="font-weight:700">(indisponível)</small>':''}</span>
+       <strong>${x.price?`+ ${money(x.price)}`:'Grátis'}</strong>
+     </label>`;}).join('')}</div>
    <div id="freeCount" class="notice">0/3 acompanhamentos grátis selecionados</div>
    <button class="checkout" onclick="confirmCustomize(${p.id})">Adicionar ao pedido</button>
  </div>`;
@@ -155,6 +174,8 @@ function limitFree(el){
 function confirmCustomize(pid){
  const p=products.find(x=>x.id===pid);
  const selected=[...document.querySelectorAll('.extra-check:checked')].map(x=>({id:Number(x.dataset.id),name:x.dataset.name,price:Number(x.dataset.price)}));
+ const unavailable=selected.filter(x=>!isAvailable(x.name));
+ if(unavailable.length){alert('Um dos acompanhamentos escolhidos ficou indisponível. Atualize a seleção e tente novamente.');return;}
  const freeCount=selected.filter(x=>x.price===0).length;
  if(freeCount>3){alert('Você pode escolher até 3 acompanhamentos grátis.');return;}
  const extraTotal=selected.reduce((s,x)=>s+x.price,0);
@@ -227,7 +248,8 @@ function renderCart(){
       <option value="Monte Castelo" data-fee="8">Monte Castelo — R$ 8,00</option>
     </select>
   </div>
-  <div class="field"><label>Endereço</label><input id="address" placeholder="Nome da rua e número"></div>
+  <div class="field"><label>Endereço</label><input id="address" placeholder="Nome da rua"></div>
+  <div class="field"><label>Número da residência</label><input id="addressNumber" type="text" inputmode="numeric" placeholder="Ex.: 123"></div>
   <div class="field"><label>Ponto de referência</label><input id="reference" placeholder="Ex.: perto da praça"></div>
   <div class="notice" id="deliveryFeeNotice">Selecione o bairro para calcular a taxa.</div>
 </div>
@@ -296,9 +318,12 @@ async function finishOrder(){
  if(mode==='entrega'){
    neighborhood=document.getElementById('neighborhood').value;
    address=document.getElementById('address').value.trim();
+   const addressNumber=document.getElementById('addressNumber').value.trim();
    reference=document.getElementById('reference').value.trim();
    deliveryFee=updateDeliveryFee();
-   if(!neighborhood || !address){alert('Informe o bairro e o endereço para entrega.');return}
+   if(!neighborhood || !address || !addressNumber){alert('Informe o bairro, a rua e o número da residência para entrega.');return}
+   if(!/\d/.test(addressNumber)){alert('Informe um número de residência válido.');return}
+   address=`${address}, ${addressNumber}`;
  }
  const pay=document.querySelector('input[name="pay"]:checked')?.value || 'Pix / QR Code / Maquininha';
  const changeFor=pay==='Dinheiro' ? Number(document.getElementById('changeFor').value||0) : null;
