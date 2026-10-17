@@ -32,7 +32,7 @@ body.locked>header,body.locked>main{display:none}
 </div>
 <header><div class="wrap top">
 <div class="brand"><div class="logo">🍃</div><div><h1>Açaí da Bah</h1><small>Painel de pedidos</small></div></div>
-<div style="display:flex;gap:8px;align-items:center"><div class="status">● Loja aberta</div><button id="soundBtn" class="sound-btn" onclick="toggleSound()">🔊 Som ligado</button><button class="logout" onclick="logout()">Sair</button></div>
+<div style="display:flex;gap:8px;align-items:center"><button id="storeBtn" class="sound-btn" onclick="toggleStore()">🟢 Loja aberta</button><button id="soundBtn" class="sound-btn" onclick="toggleSound()">🔊 Som ligado</button><button class="logout" onclick="logout()">Sair</button></div>
 </div></header>
 <main class="wrap">
 <div class="title"><div><h2>Pedidos</h2><small style="color:var(--muted)">Acompanhe cada pedido até a entrega.</small></div><button class="refresh" onclick="render()">↻ Atualizar</button></div>
@@ -52,6 +52,7 @@ let orders=[];
 let initialized=false;
 let lastOrderSignature="";
 let soundEnabled=true;
+let storeOpen=true;
 let audioCtx=null;
 const keys=["novo","preparando","pronto","saiu"];
 const accompanimentNames=["Leite em pó","Leite condensado","Disquete","Chocoball","Creme de Ninho","Ovomaltine","Paçoca","Granola","Banana","Creme de avelã","Morango","Creme de morango","Creme de cookies","Nutella","Creme de Chocolate Branco"];
@@ -84,6 +85,7 @@ async function login(){
    document.body.classList.remove("locked");
    document.getElementById("loginScreen").style.display="none";
    await loadOrders();
+   await loadStoreStatus();
    subscribePolling();
  }catch(e){
    console.error(e);
@@ -109,6 +111,24 @@ function playNewOrderSound(){
 function toggleSound(){
  soundEnabled=!soundEnabled; const b=document.getElementById('soundBtn'); if(b){b.textContent=soundEnabled?'🔊 Som ligado':'🔇 Som desligado';b.classList.toggle('off',!soundEnabled);} if(soundEnabled){ensureAudio();playNewOrderSound();}
 }
+async function loadStoreStatus(){
+ try{
+  const rows=await api('/rest/v1/store_status?select=id,aberta&id=eq.1');
+  storeOpen=rows?.[0]?.aberta!==false;
+  renderStoreButton();
+ }catch(e){console.error('Não foi possível carregar o status da loja',e);}
+}
+function renderStoreButton(){const b=document.getElementById('storeBtn');if(!b)return;b.textContent=storeOpen?'🟢 Loja aberta':'🔴 Loja fechada';b.style.background=storeOpen?'#ffffff1a':'#b423182e';b.title=storeOpen?'Clique para fechar a loja':'Clique para abrir a loja';}
+async function toggleStore(){
+ const b=document.getElementById('storeBtn'); if(b)b.disabled=true;
+ const next=!storeOpen;
+ try{
+  await api('/rest/v1/store_status?id=eq.1',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({aberta:next})});
+  storeOpen=next;renderStoreButton();
+  alert(storeOpen?'Loja aberta! Os clientes já podem fazer pedidos.':'Loja fechada! Novos pedidos foram bloqueados no site.');
+ }catch(e){alert('Não foi possível alterar o status da loja: '+e.message);await loadStoreStatus();}
+ finally{if(b)b.disabled=false;}
+}
 async function loadAvailabilityAdmin(){
  try{
   const data=await api('/rest/v1/acompanhamentos_disponibilidade?select=nome,disponivel&order=id.asc');
@@ -126,7 +146,7 @@ async function loadOrders(){
    const nextOrders=data||[];
    const sig=nextOrders.length?String(nextOrders[0].id||nextOrders[0].numero||nextOrders[0].criado_em):"";
    if(initialized && sig && sig!==lastOrderSignature) playNewOrderSound();
-   lastOrderSignature=sig; orders=nextOrders; render(); loadAvailabilityAdmin(); initialized=true;
+   lastOrderSignature=sig; orders=nextOrders; render(); loadAvailabilityAdmin(); loadStoreStatus(); initialized=true;
  }catch(e){
    if(/JWT|token|auth|401|403/i.test(e.message)){logout();setError("Sua sessão expirou. Entre novamente.");}
    else console.error(e);

@@ -57,3 +57,20 @@ grant update on public.acompanhamentos_disponibilidade to authenticated;
 
 -- Atualiza o cache do PostgREST para reconhecer a tabela nova
 notify pgrst, 'reload schema';
+
+
+-- Controle manual de loja aberta/fechada
+create table if not exists public.store_status (
+  id integer primary key check (id = 1),
+  aberta boolean not null default true,
+  atualizado_em timestamptz not null default now()
+);
+insert into public.store_status (id, aberta) values (1, true) on conflict (id) do nothing;
+alter table public.store_status enable row level security;
+drop policy if exists "public pode ler status da loja" on public.store_status;
+create policy "public pode ler status da loja" on public.store_status for select to anon, authenticated using (true);
+drop policy if exists "autenticado pode alterar status da loja" on public.store_status;
+create policy "autenticado pode alterar status da loja" on public.store_status for update to authenticated using (true) with check (true);
+grant select on public.store_status to anon, authenticated;
+grant update on public.store_status to authenticated;
+notify pgrst, 'reload schema';

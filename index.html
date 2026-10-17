@@ -10,7 +10,7 @@
 .wrap{max-width:980px;margin:auto}
 header{background:#4b1252;color:#fff;padding:18px 16px 0;border-radius:0 0 28px 28px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:15px}.brand{display:flex;align-items:center;gap:10px}.logo{width:42px;height:42px;border:1px solid #fff8;border-radius:13px;display:grid;place-items:center;font-size:22px}.brand h1{font-size:20px;margin:0}.brand small{opacity:.8;font-size:11px}.menu-btn,.cart-top{border:1px solid #fff8;background:transparent;color:#fff;border-radius:12px;padding:10px 12px;font-size:18px;cursor:pointer}.menu-overlay{position:fixed;inset:0;background:#0007;display:none;z-index:20}.menu-overlay.open{display:block}.menu-panel{position:absolute;top:0;left:0;width:min(330px,88%);height:100%;background:#fff;padding:22px;box-shadow:12px 0 35px #0003}.menu-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}.menu-head strong{font-size:20px;color:var(--purple)}.menu-close{border:0;background:#f1edf5;border-radius:50%;width:36px;height:36px;font-size:20px;cursor:pointer}.menu-link{display:flex;align-items:center;gap:12px;width:100%;border:1px solid #e7e2e8;background:#fff;color:var(--text);padding:14px;border-radius:13px;margin:10px 0;font:inherit;font-weight:800;text-align:left;cursor:pointer}.menu-link.primary{background:var(--purple);color:#fff;border-color:var(--purple)}.menu-note{font-size:12px;color:var(--muted);margin:12px 2px 0}.cart-top{position:relative}.cart-top span{position:absolute;right:-6px;top:-8px;background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;font-size:11px;display:grid;place-items:center;font-weight:800}
 .hero{padding:18px 0 0}.facade-art{border-radius:20px 20px 0 0;overflow:hidden;background:#42133f}.facade-art img{display:block;width:100%;height:auto;max-height:240px;object-fit:cover}
-.benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:18px;border:1px solid #e6dfe8;border-radius:18px;padding:16px}.benefits div{display:grid;grid-template-columns:32px 1fr;align-items:center;padding:4px 14px;border-right:1px solid #e5dfe7}.benefits div:last-child{border-right:0}.benefits strong{font-size:13px}.benefits small{grid-column:2;color:var(--muted);font-size:11px}
+.store-closed-banner{display:none;background:#fff0f0;color:#9b1c1c;border:1px solid #f3b5b5;border-radius:14px;padding:14px 16px;margin:14px auto;font-weight:800;text-align:center}.store-closed-banner.show{display:block}.benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:18px;border:1px solid #e6dfe8;border-radius:18px;padding:16px}.benefits div{display:grid;grid-template-columns:32px 1fr;align-items:center;padding:4px 14px;border-right:1px solid #e5dfe7}.benefits div:last-child{border-right:0}.benefits strong{font-size:13px}.benefits small{grid-column:2;color:var(--muted);font-size:11px}
 main{padding:20px 16px 120px}.section-title{display:flex;justify-content:space-between;align-items:center;margin:22px 0 14px}.section-title h3{margin:0;font-size:25px;color:var(--purple)}.section-title small{color:var(--muted);font-size:13px}.badge{background:#eef5c9;color:#6c8200;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800}
 .products{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.card{background:var(--card);border:1px solid #e7e2e8;border-radius:20px;padding:12px;box-shadow:0 6px 22px #42133f12}.pic{height:145px;border-radius:15px;background:linear-gradient(145deg,#f8f5fa,#f0eaf3);display:grid;place-items:center;font-size:70px}.card h4{margin:12px 0 4px;font-size:18px}.desc{color:var(--muted);font-size:13px;min-height:34px}.price{font-weight:900;font-size:19px;color:#789400;margin-top:8px}.add{width:100%;border:0;background:var(--purple);color:#fff;padding:12px;border-radius:12px;font-weight:800;margin-top:10px;cursor:pointer}.add:active{transform:scale(.98)}
 .custom-banner{margin:24px 0;background:linear-gradient(110deg,#4b1252,#65156d);color:#fff;border-radius:20px;padding:18px;display:flex;align-items:center;gap:16px}.custom-banner .banner-icon{width:54px;height:54px;border:1px dashed #fff9;border-radius:50%;display:grid;place-items:center;font-size:25px}.custom-banner div:nth-child(2){flex:1}.custom-banner strong{display:block;color:#c2dc19;font-size:20px}.custom-banner small{display:block;opacity:.9;margin-top:3px}.custom-banner button{border:0;background:var(--green);color:#fff;border-radius:12px;padding:11px 16px;font-weight:800;cursor:pointer}
@@ -36,6 +36,7 @@ main{padding:20px 16px 120px}.section-title{display:flex;justify-content:space-b
   </div>
 </div></header>
 
+<div id="storeClosedBanner" class="store-closed-banner wrap">🔴 Estamos fechados no momento e não estamos recebendo pedidos. Volte durante nosso horário de atendimento!</div>
 <section class="benefits wrap">
   <div>🛵<strong>Entrega rápida</strong><small>para toda a cidade</small></div>
   <div>💳<strong>Pagamento fácil</strong><small>Pix, cartão ou dinheiro</small></div>
@@ -74,6 +75,7 @@ main{padding:20px 16px 120px}.section-title{display:flex;justify-content:space-b
 const SUPABASE_URL="https://tqfyhdmaternpfxaxbca.supabase.co";
 const SUPABASE_KEY="sb_publishable_cSlJVWCqjUHlzYCN5pgezQ_rxKYyeEB";
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let storeOpen=true;
 const products=[
  {id:1,name:"Açaí 330 ml",price:16,emoji:"",desc:"Tamanho ideal para matar a vontade."},
  {id:2,name:"Açaí 500 ml",price:22,emoji:"",desc:"O queridinho para caprichar nos acompanhamentos."},
@@ -118,11 +120,23 @@ function renderProducts(){
  <div class="card"><div class="pic"><img src="acai-card.png" alt="Açaí"></div><h4>${p.name}</h4><div class="desc">${p.desc}</div>
  <div class="price">${money(p.price)}</div><button class="add" onclick="add(${p.id})">Adicionar</button></div>`).join('');
 }
-function add(id){
+async function add(id){
+ await loadStoreStatus();if(!storeOpen){alert('A loja está fechada no momento e não está recebendo pedidos.');return}
  const p=products.find(x=>x.id===id);
  showCustomize(p);
 }
 
+async function loadStoreStatus(){
+ try{
+  const {data,error}=await supabaseClient.from('store_status').select('aberta').eq('id',1).maybeSingle();
+  if(error) throw error;
+  storeOpen=data?.aberta!==false;
+ }catch(e){console.warn('Não foi possível consultar o status da loja',e);storeOpen=true;}
+ const banner=document.getElementById('storeClosedBanner');
+ if(banner)banner.classList.toggle('show',!storeOpen);
+ document.querySelectorAll('.add').forEach(b=>{b.disabled=!storeOpen;b.style.opacity=storeOpen?'1':'.45';b.textContent=storeOpen?'Adicionar':'Loja fechada';});
+ const cartButton=document.querySelector('.cartbar button');if(cartButton){cartButton.disabled=!storeOpen;cartButton.style.opacity=storeOpen?'1':'.45';cartButton.textContent=storeOpen?'Ver pedido →':'Loja fechada';}
+}
 async function loadAvailability(){
  try{
   const {data,error}=await supabaseClient.from('acompanhamentos_disponibilidade').select('nome,disponivel');
@@ -184,7 +198,7 @@ function confirmCustomize(pid){
 }
 function change(id,d){const x=cart.find(x=>x.id===id);if(!x)return;x.qty+=d;if(x.qty<=0)cart=cart.filter(y=>y.id!==id);updateBar();renderCart()}
 function updateBar(){let n=cart.reduce((s,x)=>s+x.qty,0);let t=cart.reduce((s,x)=>s+(x.unitTotal||x.price)*x.qty,0);document.getElementById('cartCount').textContent=`${n} ${n===1?'item':'itens'}`; document.getElementById('topCount').textContent=n;document.getElementById('cartTotal').textContent=money(t)}
-function openCart(){document.getElementById('modal').classList.add('open');renderCart()}
+async function openCart(){await loadStoreStatus();if(!storeOpen){alert('A loja está fechada no momento e não está recebendo pedidos.');return}document.getElementById('modal').classList.add('open');renderCart()}
 function closeCart(){document.getElementById('modal').classList.remove('open')}
 function renderCart(){
  const box=document.getElementById('cartLines');
@@ -311,6 +325,7 @@ function toggleChange(){
 
 }
 async function finishOrder(){
+ await loadStoreStatus();if(!storeOpen){alert('A loja está fechada no momento. Seu pedido não foi enviado.');return}
  const mode=document.querySelector('input[name="delivery"]:checked')?.value || 'retirada';
  const name=document.getElementById('name').value.trim();
  if(!name){alert('Informe seu nome.');return}
@@ -402,7 +417,7 @@ async function finishOrder(){
  saveLastOrder(saved);
  cart=[];updateBar();
 }
-renderProducts();updateBar();updateMenuOrderLink();
+renderProducts();updateBar();updateMenuOrderLink();loadStoreStatus();setInterval(loadStoreStatus,15000);
 </script>
 <footer style="text-align:center;padding:20px;color:#aaa;font-size:11px"><a href="admin.html" style="color:#aaa">Painel da loja</a></footer></body>
 </html>
