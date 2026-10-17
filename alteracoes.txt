@@ -1,2 +1,4 @@
 Atualização: som de novo pedido, controle de disponibilidade dos acompanhamentos, Creme de cookies R$4, Creme de avelã grátis e Uva removida.
 Correção adicional: permissões da tabela de disponibilidade e recarga do cache do PostgREST.
+
+- Ao confirmar um pedido, abre o WhatsApp da loja com a mensagem preenchida: itens, acompanhamentos, cliente, endereço/retirada, pagamento, subtotal, taxa e total. O cliente precisa tocar em Enviar no WhatsApp.

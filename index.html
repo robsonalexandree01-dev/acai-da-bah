@@ -399,23 +399,53 @@ async function finishOrder(){
  const addressText=mode==='retirada'?'Retirada na Açaí da Bah':`${address}${reference?` — Ref.: ${reference}`:''}`;
  const paymentText=pay==='Dinheiro'?`💵 Dinheiro<br><small>Troco para: ${money(changeFor)} · Levar troco: ${money(changeFor-total)}</small>`:`💳 ${pay}`;
 
+ // Monta a mensagem completa e abre o WhatsApp da loja após salvar o pedido.
+ const orderTime=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+ const whatsappItems=cart.map(x=>{
+   const extras=(x.extras||[]).length ? x.extras.map(e=>e.name+(e.price?` (+ ${money(e.price)})`:'' )).join(', ') : 'Sem acompanhamentos';
+   return `${x.qty}x ${x.name} — ${money((x.unitTotal||x.price)*x.qty)}\nAcompanhamentos: ${extras}`;
+ }).join('\n\n');
+ const whatsappAddress=mode==='retirada'?'Retirada na loja':`${address}, ${neighborhood}, Presidente Epitácio/SP${reference?`\nPonto de referência: ${reference}`:''}`;
+ const whatsappPayment=pay==='Dinheiro'?`Dinheiro — troco para ${money(changeFor)} (troco: ${money(changeFor-total)})`:pay;
+ const whatsappMessage=[
+   `Meu pedido #${saved.numero} — Açaí da Bah`,
+   '',
+   whatsappItems,
+   '',
+   `Nome: ${name}`,
+   `Celular: ${document.getElementById('phone').value.trim()||'Não informado'}`,
+   `Forma de pagamento: ${whatsappPayment}`,
+   `Recebimento: ${whatsappAddress}`,
+   '',
+   `Subtotal: ${money(productsTotal)}`,
+   `Taxa de entrega: ${money(deliveryFee)}`,
+   `Valor total: ${money(total)}`,
+   `Pedido feito às: ${orderTime}`,
+   '',
+   `Acompanhar pedido: https://acai-da-bah.vercel.app/pedido.html?token=${encodeURIComponent(saved.tracking_token)}`
+ ].join('\n');
+ const whatsappUrl=`https://wa.me/5518997431054?text=${encodeURIComponent(whatsappMessage)}`;
+
  document.getElementById('checkoutArea').innerHTML=`
  <div class="success show confirmation">
    <div class="big">✅</div>
-   <h2>Pedido confirmado!</h2>
-   <p>Seu pedido <strong>#${saved.numero}</strong> foi recebido e já pode ser preparado. 💜</p>
+   <h2>Pedido registrado!</h2>
+   <p>Seu pedido <strong>#${saved.numero}</strong> foi registrado. Vamos abrir o WhatsApp para você enviar os detalhes à loja. 💜</p>
    <div class="confirm-card"><h3>Seu pedido</h3>${productLines}
      <div class="confirm-line"><span>Produtos</span><strong>${money(productsTotal)}</strong></div>
      <div class="confirm-line"><span>Entrega</span><strong>${money(deliveryFee)}</strong></div>
      <div class="confirm-total"><span>Total</span><strong>${money(total)}</strong></div>
    </div>
    <div class="confirm-card"><h3>Recebimento</h3><p><strong>${deliveryText}</strong><br><small>${addressText}</small></p><p><strong>${paymentText}</strong></p></div>
-   <div class="notice">Estamos preparando seu açaí. 💜</div>
-   <a class="checkout" id="trackOrderBtn" href="pedido.html?token=${encodeURIComponent(saved.tracking_token)}" style="display:block;text-align:center;text-decoration:none">📍 Acompanhar pedido</a>
+   <div class="notice">No WhatsApp, confira a mensagem e toque em <strong>Enviar</strong> para a loja receber seu pedido.</div>
+   <a class="checkout" id="sendOrderWhatsApp" href="${whatsappUrl}" style="display:block;text-align:center;text-decoration:none;margin-bottom:10px">📲 Enviar pedido pelo WhatsApp</a>
+   <a class="checkout" id="trackOrderBtn" href="pedido.html?token=${encodeURIComponent(saved.tracking_token)}" style="display:block;text-align:center;text-decoration:none;margin-bottom:10px">📍 Acompanhar pedido</a>
    <button class="checkout" onclick="closeCart()">Voltar ao cardápio</button>
  </div>`;
  saveLastOrder(saved);
  cart=[];updateBar();
+ // Redirecionamento direto solicitado; o botão fica disponível como alternativa.
+ setTimeout(()=>{ window.location.href=whatsappUrl; },700);
 }
 renderProducts();updateBar();updateMenuOrderLink();loadStoreStatus();setInterval(loadStoreStatus,15000);
 </script>
